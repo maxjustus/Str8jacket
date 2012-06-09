@@ -5,26 +5,31 @@ describe Str8jacket do
   class Testingthing
     include Str8jacket
 
-    sig('to_int', 'to_hash')
+    sig :to_int, :to_hash
     def herp(int_arg, hash_arg, *args)
       num = int_arg + 1
       hash_arg.include?('Herp')
       [num, hash_arg]
     end
 
-    sig('to_hash')
+    sig :to_hash
     def derp(options)
       options['cool']
     end
 
-    sig('to_int') { |_| _.to_a }
+    sig(:to_int) { |_| _.to_a }
     def lerp(int)
       {int => nil}
     end
 
-    sig({'to_sym' => 'to_s'}, ['to_i']) { |_| _.to_a }
+    sig({:to_sym => :to_s}, [:to_i]) { |_| _.to_a }
     def hash_validation(options, list_thing)
       [options, list_thing]
+    end
+
+    sig({:to_sym => :to_i}, :to_i, [:to_i]) {|_| Array(_)}
+    def mom(options, random_integer_flag, random_array_arg)
+      options[:something] + random_integer_flag + random_array_arg.reduce(0) {|v, n| v + n}
     end
   end
 
@@ -49,8 +54,9 @@ describe Str8jacket do
       end.should_not raise_exception
     end
 
-    it 'validates and enforces hash argument types' do
+    it 'validates and enforces hash and array argument types' do
       instance.hash_validation({'herp' => :derp}, ['1']).should == [{:herp => 'derp'}, [1]]
+      instance.mom({'something' => '1'}, '2', ['3']).should == [6]
 
       -> do
         instance.hash_validation({['herp'] => :derp}, ['1'])
