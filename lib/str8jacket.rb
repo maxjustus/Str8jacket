@@ -22,46 +22,81 @@ module Str8jacket
       return_proc = sig.pop
 
       meth = instance_method(method_name)
+      orig_arguments = meth.parameters
 
       define_method(method_name) do |*args, &blk|
-        sig.each_with_index do |conversion_meth, index|
+        sig.each_with_index do |conversion, index|
+          required = orig_arguments[index][0] == :req
           arg = args[index]
-          args[index] = if conversion_meth.class == Hash
-                          self.class._validate_hash(arg, conversion_meth, method_name, index)
-                        elsif conversion_meth.class == Array
-                          self.class._validate_array(arg, conversion_meth, method_name, index)
-                        else
-                          self.class._validate_arg_type(arg, conversion_meth, method_name, index)
-                        end
+          args[index] = Str8jacket::Validator.new(arg, conversion, method_name, index, required).validate
         end
 
         result = meth.bind(self).call(*args, &blk)
         return_proc ? return_proc.call(result) : result
       end
     end
+  end
 
-    def _validate_hash(hash, conversion_meths, method_name, index)
-      key_conversion, value_conversion = conversion_meths.to_a.flatten
-      hash.reduce({}) do |new_h, (k,v)|
-        converted_key = _validate_arg_type(k, key_conversion, method_name, "#{index} (key in hash)")
-        converted_val = _validate_arg_type(v, value_conversion, method_name, "#{index} (value in hash)")
+  class Validator
+    attr_accessor :arg, :conversion, :method_name, :index, :required
+    def initialize(arg, conversion, method_name, index, required)
+      @arg = arg
+      @conversion = conversion
+      @method_name = method_name
+      @index = index
+      @required = required
+    end
+
+    def validate
+      if arg && required
+        if conversion.class == Hash
+          validate_hash
+        elsif conversion.class == Array
+          validate_array
+        else
+          validate_arg_type
+        end
+      end
+    end
+
+    def validate_hash
+      key_conversion, value_conversion = conversion.to_a.flatten
+
+      arg.reduce({}) do |new_h, (k,v)|
+        converted_key = validate_arg_type(k, key_conversion, "(key in hash)")
+        converted_val = validate_arg_type(v, value_conversion, "(value in hash)")
         new_h[converted_key] = converted_val
         new_h
       end
     end
 
-    def _validate_array(array, conversion, method_name, index)
-      array.reduce([]) do |new_a, elem|
-        new_a.push(_validate_arg_type(elem, conversion.first, method_name, index))
+    def validate_array
+      arg.reduce([]) do |new_a, elem|
+        new_a.push(validate_arg_type(elem, conversion.first))
         new_a
       end
     end
 
-    def _validate_arg_type(arg, conversion_meth, method_name, index)
-      unless arg.respond_to?(conversion_meth)
-        raise "Argument #{arg.inspect} for #{self.name}##{method_name} at position #{index} does not respond to #{conversion_meth}"
+    def validate_arg_type(arg = @arg, conversion = @conversion, msg = '')
+      if [String, Symbol].include?(conversion.class)
+        unless arg.respond_to?(conversion)
+          argument_error(arg, conversion, msg)
+        end
+        arg.send(conversion)
+      else
+        validate_arg_class(arg, conversion, msg)
       end
-      arg.send(conversion_meth)
+    end
+
+    def validate_arg_class(arg = @arg, conversion = @conversion, msg = '')
+      unless arg.is_a?(conversion)
+        argument_error(arg, conversion, msg, 'is not an instance of')
+      end
+      arg
+    end
+
+    def argument_error(arg, conversion, type_msg, conversion_message = 'does not respond to')
+      raise "Argument #{arg.inspect} #{type_msg} at position #{index} #{conversion_message} #{conversion}".split(' ').join(' ')
     end
   end
 end
