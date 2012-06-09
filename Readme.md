@@ -19,3 +19,9 @@ Return values can be converted using block passed to sig method.
 
     Herp.new.mom({['wat'] => '1'}, '2', ['3'])
     #=> raises an exception with the details regarding failed conversion
+
+TODO
+====
+
+* Support private and protected methods
+* Support singleton methods
