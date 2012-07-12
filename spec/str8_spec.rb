@@ -49,11 +49,11 @@ describe Str8jacket do
       instance.herp(1, {}, 'LOL?')
       -> do
         instance.herp('a', 1)
-      end.should raise_exception('Argument "a" at position 0 does not respond to to_int')
+      end.should raise_exception(ArgumentError, 'Argument "a" at position 0 does not respond to to_int')
 
       -> do
         instance.herp(1, 111)
-      end.should raise_exception('Argument 111 at position 1 does not respond to to_hash')
+      end.should raise_exception(ArgumentError, 'Argument 111 at position 1 does not respond to to_hash')
 
       -> do
         instance.derp({})
@@ -75,11 +75,11 @@ describe Str8jacket do
 
        -> do
         instance.login(1, {})
-       end.should raise_exception('Argument 1 at position 0 is not an instance of User')
+       end.should raise_exception(ArgumentError, 'Argument 1 at position 0 is not an instance of User')
 
        -> do
         instance.login(User.new, {User.new => 'stuff'})
-       end.should raise_exception('Argument "stuff" (value in hash) at position 1 is not an instance of Integer')
+       end.should raise_exception(ArgumentError, 'Argument "stuff" (value in hash) at position 1 is not an instance of Integer')
     end
 
     it 'validates and enforces hash and array argument types' do
@@ -88,7 +88,7 @@ describe Str8jacket do
 
       -> do
         instance.hash_validation({['herp'] => :derp}, ['1'])
-      end.should raise_exception('Argument ["herp"] (key in hash) at position 0 does not respond to to_sym')
+      end.should raise_exception(ArgumentError, 'Argument ["herp"] (key in hash) at position 0 does not respond to to_sym')
     end
 
     it 'enforces type of return value' do

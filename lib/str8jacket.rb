@@ -96,7 +96,7 @@ module Str8jacket
     end
 
     def argument_error(arg, conversion, type_msg, conversion_message = 'does not respond to')
-      raise "Argument #{arg.inspect} #{type_msg} at position #{index} #{conversion_message} #{conversion}".split(' ').join(' ')
+      raise ArgumentError, "Argument #{arg.inspect} #{type_msg} at position #{index} #{conversion_message} #{conversion}".split(' ').join(' ')
     end
   end
 end
